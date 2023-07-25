@@ -68,7 +68,7 @@ if enable_refiner:
 # NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale, samples=1, steps=50, refiner_strength=0.3, seed=-1, w=1024, h=1024):
+def infer(prompt, negative, scale, samples=1, steps=50, refiner_strength=0.3, seed=-1):
     prompt, negative = [prompt] * samples, [negative] * samples
 
     g = torch.Generator(device="cuda")
@@ -80,10 +80,10 @@ def infer(prompt, negative, scale, samples=1, steps=50, refiner_strength=0.3, se
     images_b64_list = []
 
     if not enable_refiner or output_images_before_refiner:
-        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, width=w, height=h, generator=g).images
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, generator=g).images
     else:
         # This skips the decoding and re-encoding for refinement.
-        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent", width=w, height=h, generator=g).images
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent", generator=g).images
 
     gc.collect()
     torch.cuda.empty_cache()
@@ -100,7 +100,7 @@ def infer(prompt, negative, scale, samples=1, steps=50, refiner_strength=0.3, se
                 image_b64 = (f"data:image/jpeg;base64,{img_str}")
                 images_b64_list.append(image_b64)
 
-        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength, width=w, height=h, generator=g).images
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength, generator=g).images
 
         gc.collect()
         torch.cuda.empty_cache()
