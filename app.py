@@ -48,7 +48,7 @@ else:
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
 
-pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+# pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
 if enable_refiner:
     print("Loading model", model_key_refiner)
@@ -63,7 +63,7 @@ if enable_refiner:
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()
 
-    pipe_refiner.unet = torch.compile(pipe_refiner.unet, mode="reduce-overhead", fullgraph=True)
+    #pipe_refiner.unet = torch.compile(pipe_refiner.unet, mode="reduce-overhead", fullgraph=True)
 
 # NOTE: we do not have word list filtering in this gradio demo
 
@@ -378,7 +378,7 @@ with block:
                 loading_icon = gr.HTML(loading_icon_html)
                 share_button = gr.Button("Share to community", elem_id="share-btn")
 
-        with gr.Accordion("Advanced settings", open=False):
+        with gr.Accordion("Advanced settings", open=True):
         #    gr.Markdown("Advanced settings are temporarily unavailable")
             samples = gr.Slider(label="Images", minimum=1, maximum=4, value=4, step=1)
             steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
@@ -386,16 +386,8 @@ with block:
                 refiner_strength = gr.Slider(label="Refiner Strength", minimum=0, maximum=1.0, value=0.3, step=0.1)
             else:
                 refiner_strength = gr.Slider(label="Refiner Strength (refiner not enabled)", minimum=0, maximum=0, value=0, step=0)
-            guidance_scale = gr.Slider(
-                label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
-            )
-            seed = gr.Slider(
-                label="Seed",
-                minimum=-1,
-                maximum=2147483647,
-                step=1,
-                randomize=True,
-            )
+            guidance_scale = gr.Slider(label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1)
+            seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, randomize=True)
             width = gr.Slider(label="Width", minimum=512, maximum=2048, value=1024, step=256)
             height = gr.Slider(label="Height", minimum=512, maximum=2048, value=1024, step=256)
 
