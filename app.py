@@ -48,7 +48,7 @@ else:
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
 
-# pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
 if enable_refiner:
     print("Loading model", model_key_refiner)
@@ -63,12 +63,12 @@ if enable_refiner:
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()
 
-    # pipe_refiner.unet = torch.compile(pipe_refiner.unet, mode="reduce-overhead", fullgraph=True)
+    pipe_refiner.unet = torch.compile(pipe_refiner.unet, mode="reduce-overhead", fullgraph=True)
 
 # NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, seed=-1):
+def infer(prompt, negative, scale, samples=1, steps=50, refiner_strength=0.3, seed=-1, w=1024, h=1024):
     prompt, negative = [prompt] * samples, [negative] * samples
 
     g = torch.Generator(device="cuda")
@@ -80,10 +80,10 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
     images_b64_list = []
 
     if not enable_refiner or output_images_before_refiner:
-        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, generator=g).images
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, width=w, height=h, generator=g).images
     else:
         # This skips the decoding and re-encoding for refinement.
-        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent", generator=g).images
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent", width=w, height=h, generator=g).images
 
     gc.collect()
     torch.cuda.empty_cache()
@@ -100,7 +100,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
                 image_b64 = (f"data:image/jpeg;base64,{img_str}")
                 images_b64_list.append(image_b64)
 
-        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength, generator=g).images
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength, width=w, height=h, generator=g).images
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -389,7 +389,6 @@ with block:
             guidance_scale = gr.Slider(
                 label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
             )
-
             seed = gr.Slider(
                 label="Seed",
                 minimum=-1,
@@ -397,6 +396,8 @@ with block:
                 step=1,
                 randomize=True,
             )
+            width = gr.Slider(label="Width", minimum=512, maximum=2048, value=1024, step=256)
+            height = gr.Slider(label="Height", minimum=512, maximum=2048, value=1024, step=256)
 
         ex = gr.Examples(examples=examples, fn=infer, inputs=[text, negative, guidance_scale], outputs=[gallery, community_icon, loading_icon, share_button], cache_examples=False)
         ex.dataset.headers = [""]
